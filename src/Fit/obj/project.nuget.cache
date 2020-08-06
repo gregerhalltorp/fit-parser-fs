@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "PkqHvCO0WI1JAuAu2mah9T5Y+Z2eYJhFpArgcsq614R9DrFtQuhtkM9KDKiFNbJji4eFfqbxBg46YUP49ACceg==",
+  "success": true,
+  "projectFilePath": "/Users/greghall/projects/priv/fit-reader-fs/src/Fit/Fit.fsproj",
+  "expectedPackageFiles": [
+    "/Users/greghall/.nuget/packages/fsharp.core/4.7.1/fsharp.core.4.7.1.nupkg.sha512",
+    "/Users/greghall/.nuget/packages/microsoft.netcore.platforms/1.1.0/microsoft.netcore.platforms.1.1.0.nupkg.sha512",
+    "/Users/greghall/.nuget/packages/netstandard.library/2.0.3/netstandard.library.2.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}

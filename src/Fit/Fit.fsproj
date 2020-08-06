@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CRC.fs" />
+    <Compile Include="DomainTypes.fs" />
+    <Compile Include="Profile.fs" />
+    <Compile Include="Header.fs" />
+    <Compile Include="Message.fs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,8 @@
+/Users/greghall/projects/priv/fit-reader-fs/src/Fit/obj/Debug/netstandard2.0/Fit.fsprojAssemblyReference.cache
+/Users/greghall/projects/priv/fit-reader-fs/src/Fit/obj/Debug/netstandard2.0/Fit.AssemblyInfoInputs.cache
+/Users/greghall/projects/priv/fit-reader-fs/src/Fit/obj/Debug/netstandard2.0/Fit.AssemblyInfo.fs
+/Users/greghall/projects/priv/fit-reader-fs/src/Fit/bin/Debug/netstandard2.0/Fit.deps.json
+/Users/greghall/projects/priv/fit-reader-fs/src/Fit/bin/Debug/netstandard2.0/Fit.dll
+/Users/greghall/projects/priv/fit-reader-fs/src/Fit/bin/Debug/netstandard2.0/Fit.pdb
+/Users/greghall/projects/priv/fit-reader-fs/src/Fit/obj/Debug/netstandard2.0/Fit.dll
+/Users/greghall/projects/priv/fit-reader-fs/src/Fit/obj/Debug/netstandard2.0/Fit.pdb
