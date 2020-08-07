@@ -50,19 +50,22 @@ module Message =
 
     let readDataMessage (data: byte array) (messages: Message list) =
         let localMessageNumber = data.[0] &&& LocalMesgNumMask
+        printfn "\tlocal message number: %i" localMessageNumber
 
-        let def =
+        let defMessage =
             messages
             |> List.choose (function
                 | MessageDefinition (d) -> Some(d)
                 | _ -> None)
             |> List.find (fun m -> m.LocalMsgNum = localMessageNumber)
 
-        let message = DataMessage (parseMessage data.[1..] def)
-        printfn "The message was: %A" message
+        let messageSize = int defMessage.GetMessageSize
 
-        ()
+        let message =
+            DataMessage(parseMessage data.[1..messageSize] defMessage)
 
+        (messages |> List.append [message], data.[(messageSize + 1)..])
+        
     let rec readMessages (data: byte array) (messages: List<Message>) =
         match data.Length with
         | 0 -> messages
@@ -82,8 +85,8 @@ module Message =
 
             | ``Data message`` ->
                 printfn "data message"
-                readDataMessage data messages
-                readMessages [||] messages
+                let (newMessages, newData) = readDataMessage data messages
+                readMessages newData newMessages
 
             | Other ->
                 printfn "something else"

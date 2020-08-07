@@ -113,37 +113,27 @@ module Profile =
         | FieldTypes.Byte
         | FieldTypes.UInt8
         | FieldTypes.UInt8z ->
-            printfn "incoming size: %i, this size: %i" size 1
             (FieldValue data.[0], 1)
         | FieldTypes.SInt8 ->
-            printfn "incoming size: %i, this size: %i" size 1
             (FieldValue(sbyte data.[0]), 1)
         | FieldTypes.SInt16 ->
-            printfn "incoming size: %i, this size: %i" size 2
             (FieldValue(BitConverter.ToInt16(data, 0)), 2) // Need to implement handling of little-endian cases
         | FieldTypes.UInt16
         | FieldTypes.UInt16z ->
-            printfn "incoming size: %i, this size: %i" size 2
             (FieldValue(BitConverter.ToUInt16(data, 0)), 2)
         | FieldTypes.SInt32 ->
-            printfn "incoming size: %i, this size: %i" size 4
             (FieldValue(BitConverter.ToInt32(data, 0)), 4)
         | FieldTypes.UInt32
         | FieldTypes.UInt32z ->
-            printfn "incoming size: %i, this size: %i" size 4
             (FieldValue(BitConverter.ToUInt32(data, 0)), 4)
         | FieldTypes.SInt64 ->
-            printfn "incoming size: %i, this size: %i" size 8
             (FieldValue(BitConverter.ToInt64(data, 0)), 8)
         | FieldTypes.UInt64
         | FieldTypes.UInt64z ->
-            printfn "incoming size: %i, this size: %i" size 8
             (FieldValue(BitConverter.ToUInt64(data, 0)), 8)
         | FieldTypes.Float32 ->
-            printfn "incoming size: %i, this size: %i" size 4
             (FieldValue(BitConverter.ToSingle(data, 0)), 4)
         | FieldTypes.Float64 ->
-            printfn "incoming size: %i, this size: %i" size 8
             (FieldValue(BitConverter.ToDouble(data, 0)), 8)
         | _ -> (FieldValue data.[0..size - 1], size)
 
@@ -193,13 +183,11 @@ module Profile =
     let parseMessage (data: byte array) (definition: MessageDefinition) =
         match definition.GlobalMsgNum with
         | MesgNum.FileId ->
-            printfn "fileId thingy"
+            printfn "\tfileId thingy"
 
             let message =
                 getFileIdMessage ()
                 |> removeEmptyFieldsFromMessage
-
-            printfn "Here, the message is %A" message
 
             let newFields =
                 definition.Fields
@@ -228,5 +216,9 @@ module Profile =
             { message with
                   LocalNum = LocalNum definition.LocalMsgNum
                   Fields = newFields }
-
-        | _ -> baseProfileMessageBase
+        | MesgNum.FileCreator ->
+            printfn "\tfilecreator thingy"
+            baseProfileMessageBase
+        | _ -> 
+            printfn "\tnot fileId -> returning baseProfileMessage"
+            baseProfileMessageBase

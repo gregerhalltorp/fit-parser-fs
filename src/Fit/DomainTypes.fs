@@ -82,6 +82,8 @@ module DomainTypes =
 
     type MesgNum =
         | FileId = 0us
+        | FileCreator = 49us
+
 
     type FieldDefinition = { Num: byte; Size: byte; Type: byte }
 
@@ -94,6 +96,7 @@ module DomainTypes =
         member this.IsBigEndian = this.Architecture = BigEndian
 
         member this.GetMessageSize =
+            // In the SDK, this also adds 1 for the header.
             this.Fields |> List.sumBy (fun f -> f.Size)
 
     type ProfileMessage =
