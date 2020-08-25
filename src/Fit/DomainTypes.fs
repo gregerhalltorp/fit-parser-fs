@@ -92,7 +92,7 @@ module DomainTypes =
           Architecture: byte
           GlobalMsgNum: MesgNum
           NumFields: byte
-          Fields: List<FieldDefinition> }
+          Fields: FieldDefinition List }
         member this.IsBigEndian = this.Architecture = BigEndian
 
         member this.GetMessageSize =

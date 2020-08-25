@@ -4,13 +4,14 @@ open System
 
 module Header =
     type HeaderSize =
-        | WithCRC
-        | WithoutCRC
+        | WithCRC = 14uy
+        | WithoutCRC = 12uy
+    let HeaderSizeConverter = LanguagePrimitives.EnumOfValue<byte, HeaderSize>
 
     type ProtocolVersion = byte
     type ProfileVersion = int16
     type DataSize = int32
-    type DataType = char array
+    type DataType = char []
     type CRC = int16
 
     type Header =
@@ -21,12 +22,10 @@ module Header =
           DataType: DataType
           CRC: CRC }
 
-    let HeaderWithCRCSize = byte 14
     let ValidDataType = ".FIT"
 
-    let parseHeader (headerData: byte array) =
-        let size =
-            if headerData.[0] = HeaderWithCRCSize then HeaderSize.WithCRC else HeaderSize.WithoutCRC
+    let parseHeader (headerData: byte []) =
+        let size = HeaderSizeConverter headerData.[0]
 
         let protocolVersion = headerData.[1]
         let profileVersion = BitConverter.ToInt16(headerData, 2)
@@ -36,7 +35,8 @@ module Header =
         let crc =
             match size with
             | HeaderSize.WithCRC -> BitConverter.ToInt16(headerData, 12)
-            | _ -> int16 0
+            | HeaderSize.WithoutCRC -> 0s
+            | _ -> raise(Exception("Unrecognized header size")) 
 
         { Size = size
           ProtocolVersion = protocolVersion

@@ -107,7 +107,7 @@ module Profile =
         message.Fields
         |> List.find (fun f -> f.Num = fieldNum)
 
-    let getValue baseTypeNum size (data: byte array) =
+    let getValue baseTypeNum size (data: byte []) =
         match baseTypeNum with
         | FieldTypes.Enum
         | FieldTypes.Byte
@@ -140,7 +140,7 @@ module Profile =
     let rec tryReadValue numFieldsToRead
                          alwaysKeepValues
                          (values: FieldValue list)
-                         (data: byte array)
+                         (data: byte [])
                          size
                          (Type fieldType)
                          =
@@ -166,7 +166,7 @@ module Profile =
             | false -> tryReadValue (numFieldsToRead - 1) alwaysKeepValues values data.[1..] size (Field.Type fieldType)
 
 
-    let readFieldValue size (data: byte array) (field: Field) =
+    let readFieldValue size (data: byte []) (field: Field) =
         let (Type fieldType) = field.Type
         let baseType = fieldType &&& BaseTypeNumMask
         if baseType = StringType then
@@ -180,7 +180,7 @@ module Profile =
             { field with
                   Values = (tryReadValue numElements alwaysKeepValues [] data (int size) field.Type) }
 
-    let parseMessage (data: byte array) (definition: MessageDefinition) =
+    let parseMessage (data: byte []) (definition: MessageDefinition) =
         match definition.GlobalMsgNum with
         | MesgNum.FileId ->
             printfn "\tfileId thingy"

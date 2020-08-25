@@ -3,8 +3,10 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Constants.fs" />
     <Compile Include="CRC.fs" />
     <Compile Include="DomainTypes.fs" />
+    <Compile Include="Field.fs" />
     <Compile Include="Profile.fs" />
     <Compile Include="Header.fs" />
     <Compile Include="Message.fs" />

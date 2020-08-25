@@ -20,14 +20,14 @@ module Message =
         then ``Data message``
         else Other
 
-    let readMessageDefinition (data: byte array) =
+    let readMessageDefinition (data: byte []) =
         let localMessageNumber = data.[0] &&& LocalMesgNumMask
         let architecture = data.[2]
         let globalMessageNumber = BitConverter.ToUInt16(data, 3)
         let numFields = data.[5]
         let endByte = (int numFields) * 3 + 5
 
-        let rec getFields (data: byte array) (fields: List<FieldDefinition>) =
+        let rec getFields (data: byte []) (fields: FieldDefinition List) =
             match data.Length with
             | 0 -> fields
             | _ ->
@@ -48,7 +48,7 @@ module Message =
               Fields = fields },
          endByte + 1)
 
-    let readDataMessage (data: byte array) (messages: Message list) =
+    let readDataMessage (data: byte []) (messages: Message list) =
         let localMessageNumber = data.[0] &&& LocalMesgNumMask
         printfn "\tlocal message number: %i" localMessageNumber
 
@@ -66,7 +66,7 @@ module Message =
 
         (messages |> List.append [message], data.[(messageSize + 1)..])
         
-    let rec readMessages (data: byte array) (messages: List<Message>) =
+    let rec readMessages (data: byte []) (messages: Message List) =
         match data.Length with
         | 0 -> messages
         | _ ->

@@ -2,7 +2,7 @@ module FileReader
 
 open System.IO
 
-let rec readData (stream:FileStream) buffer offset count =
+let rec readData (stream: FileStream) buffer offset count =
     match count with
     | 0 ->
         printfn "done"
@@ -15,7 +15,7 @@ let rec readData (stream:FileStream) buffer offset count =
 let getFileData fileName =
     use source = File.OpenRead(fileName)
     let bytesToRead = int source.Length
-    let (data: byte array) = Array.zeroCreate bytesToRead
+    let (data: byte []) = Array.zeroCreate bytesToRead
     let bytesRead = 0
 
     readData source data bytesRead bytesToRead
