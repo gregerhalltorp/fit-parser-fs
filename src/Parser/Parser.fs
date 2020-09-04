@@ -2,156 +2,306 @@ namespace Parse
 
 open System
 open System.Text
+open Fit
 
 module ParseTypes =
-    type ParserLabel = string
+  type ParserLabel = string
 
-    type ParserError = string
-    type Position = int
+  type ParserError = string
+  type Position = int
 
-    type InputState = { data: byte []; position: Position }
+  type InputState<'UserState> =
+    { data: byte []
+      position: Position
+      userState: 'UserState }
 
-    type Result<'Return> =
-        | Success of 'Return
-        // | Failure of ParserError * Position
-        | Failure of ParserLabel * ParserError * int
+  type Result<'Return, 'UserState> =
+    | Success of 'Return * InputState<'UserState>
+    // | Failure of ParserError * Position
+    | Failure of ParserLabel * ParserError * int
 
-    type Parser<'Return> =
-        { parseFn: (InputState -> Result<'Return>)
-          label: ParserLabel }
-    // type Parser<'Return> = InputState -> Result<'Return * InputState>
+  type Parser<'Return, 'UserState> =
+    { parseFn: (InputState<'UserState> -> Result<'Return, 'UserState>)
+      label: ParserLabel }
+  // type Parser<'Return> = InputState -> Result<'Return * InputState>
+  type FitState = { headerSize: byte; isBigEndian: bool }
 
-    let run p i = p.parseFn i
+  let run p i = p.parseFn i
 
-    let getLabel p = p.label
+  let getLabel p = p.label
 
-    let setLabel p l =
-        let newInnerFn input =
-            let result = p.parseFn input
-            match result with
-            | Success s -> Success s
-            | Failure (_, err, pos) -> Failure(l, err, pos)
+  let setLabel p l =
+    let newInnerFn input =
+      let result = p.parseFn input
+      match result with
+      | Success (v, s) -> Success(v, s)
+      | Failure (_, err, pos) -> Failure(l, err, pos)
 
-        { parseFn = newInnerFn; label = l }
+    { parseFn = newInnerFn; label = l }
 
-    let (<?>) = setLabel
+  let (<?>) = setLabel
 
-    let bindP (f: _ -> Parser<_>) (p: Parser<_>): Parser<_> =
-        let label = "unknown"
+  let getUserState =
+    { parseFn = fun state -> Success(state.userState, state)
+      label = "getUserState" }
 
-        let innerFn input =
-            let result1 = run p input
-            match result1 with
-            | Failure (label, error, pos) -> Failure(label, error, pos)
-            | Success (value1, newState) ->
-                let p2 = f value1
-                run p2 newState
+  let setUserState userState =
+    { parseFn = fun state -> Success((), { state with userState = userState })
+      label = "setUserState" }
 
-        { parseFn = innerFn; label = label }
+  let updateUserState nus =
+    { parseFn = fun state -> Success((), { state with userState = nus })
+      label = "updateUserState" }
 
-    let (>>=) p f = bindP f p
+  let bindP (f: _ -> Parser<_, _>) (p: Parser<_, _>): Parser<_, _> =
+    let label = "unknown"
 
-    let returnP x =
-        let label = sprintf "%A" x
-        let innerFn input = Success(x, input)
-        { parseFn = innerFn; label = label }
+    let innerFn input =
+      let result1 = run p input
+      match result1 with
+      | Failure (label, error, pos) -> Failure(label, error, pos)
+      | Success (value1, newState) ->
+          let p2 = f value1
+          run p2 newState
 
-    let andThen p1 p2 =
-        let label =
-            sprintf "%s andThen %s" (getLabel p1) (getLabel p2)
+    { parseFn = innerFn; label = label }
 
-        p1
-        >>= fun p1Result ->
-                p2
-                >>= fun p2Result -> returnP (p1Result, p2Result)
-        <?> label
+  let (>>=) p f = bindP f p
 
-    let (.>>.) = andThen
+  let returnP x =
+    let label = sprintf "%A" x
+    let innerFn input = Success(x, input)
+    { parseFn = innerFn; label = label }
 
-    let mapP f = bindP (f >> returnP)
-    let (|>>) x f = mapP f x
+  let andThen p1 p2 =
+    let label =
+      sprintf "%s andThen %s" (getLabel p1) (getLabel p2)
 
-    let canConsume state count =
-        let endPos = count + state.position
-        if endPos > state.data.Length then None else Some(count)
+    p1
+    >>= fun p1Result ->
+          p2
+          >>= fun p2Result -> returnP (p1Result, p2Result)
+    <?> label
 
-    let consume count state =
-        let endPos = count + state.position
-        if endPos > state.data.Length then
-            None
-        else
-            let bytes =
-                state.data.[state.position..(endPos - 1)]
+  let (.>>.) = andThen
 
-            let newState = { state with position = endPos }
-            Some(bytes, newState)
+  let orElse p1 p2 =
+    let innerFn state =
+      let r1 = run p1 state
+      match r1 with
+      | Success (_) -> r1
+      | Failure _ -> run p2 state
 
-    let matcher predicate count label: Parser<_> =
-        let innerFn input =
-            match consume count input with
-            | None -> Failure(label, "Ran out of data", input.position)
-            | Some (bytes, newState) ->
-                if predicate bytes
-                then Success(bytes, newState)
-                else Failure(label, "Unexpected data", input.position)
+    { parseFn = innerFn; label = "orElse" }
 
-        { parseFn = innerFn; label = label }
+  let (<|>) = orElse
 
-    let binMatch label (num: int) = matcher (fun _ -> true) num label
+  let mapP f = bindP (f >> returnP)
+  let (|>>) x f = mapP f x
 
-    let toInt16 v = BitConverter.ToInt16(v, 0)
-    let toInt32 v = BitConverter.ToInt32(v, 0)
-    let toCharArr ca = ca |> Array.map char
+  let (.>>) p1 p2 = p1 .>>. p2 |> mapP (fun (a, _) -> a)
+  let (>>.) p1 p2 = p1 .>>. p2 |> mapP (fun (_, b) -> b)
 
-    let byteN: int -> Parser<_> = binMatch "dodo"
+  let canConsume state count =
+    let endPos = count + state.position
+    if endPos > state.data.Length then None else Some(count)
 
-    let byte1 =
-        byteN 1
-        >>= fun b1 -> returnP b1.[0]
+  // Idea: make this into a parser instead and don't use the matcher when we don't have to?
+  // But how? The prediacate matcher'll need to be chained to this one (>>), is it worth it?
+  // Do it with returnP? Could be the solution
+  // Also fix so we return the correct position here instead of the start of the consume
+  let consume count state =
+    let endPos = count + state.position
+    if endPos > state.data.Length then
+      None
+    else
+      let bytes =
+        state.data.[state.position..(endPos - 1)]
 
-    let int16 = byteN 2 |>> toInt16
-    let int32 = byteN 4 |>> toInt32
+      let newState = { state with position = endPos }
+      Some(bytes, newState)
 
-    let charArr n = byteN n |>> toCharArr
+  let matcherConsumer predicate count label: Parser<_, _> =
+    let innerFn (input: InputState<'UserState>) =
+      match consume count input with
+      | None -> Failure(label, "Ran out of data", input.position)
+      | Some (bytes, newState) ->
+          let (isMatch, error) = predicate bytes
+          if isMatch then
+            Success(bytes, newState)
+          else
+            match error with
+            | Some (msg) -> Failure(label, msg, input.position)
+            | None -> Failure(label, "Unexpected data", input.position)
 
-    let toBytes (str: string) = Encoding.UTF8.GetBytes(str)
+    { parseFn = innerFn; label = label }
 
-    let stringMatch (value: string) =
-        let label = sprintf "matching string %s" value
-        let stringBytes = Encoding.UTF8.GetBytes(value)
-        matcher (fun bytes -> bytes = stringBytes) stringBytes.Length label
+  let matchUserState predicate label =
+    let innerFn state =
+      let result = run getUserState state
+      match result with
+      | Failure (_) -> raise (Exception("spectacular"))
+      | Success (us, state) ->
+          if predicate us
+          then Success(true, state)
+          else Failure(label, "UserState didn't match", state.position)
 
-    type Header =
-        { size: byte
-          protocolVersion: byte
-          profileVersion: int16
-          dataSize: int
-          dataType: char [] }
-    // crc: int16 }
+    { parseFn = innerFn; label = label }
 
-    let headerP =
-        (byte1
-         .>>. byte1
-         .>>. int16
-         .>>. int32
-         .>>. (stringMatch ".FIT" |>> toCharArr)
-         >>= fun ((((size, protocolVersion), profileVersion), dataSize), dataType) ->
-             returnP
-                 { size = size
-                   protocolVersion = protocolVersion
-                   profileVersion = profileVersion
-                   dataSize = dataSize
-                   dataType = dataType })
-        <?> "header"
+  let binMatch label (num: int): Parser<_, 'UserState> =
+    matcherConsumer (fun _ -> (true, None)) num label
 
-    let printResult result =
-        match result with
-        | Success (value, _) -> printfn "%A" value
-        | Failure (label, error, pos) -> printfn "Error parsing %s at position %i: %s" label pos error
+  let toInt16 v = BitConverter.ToInt16(v, 0)
+  let toUInt16 v = BitConverter.ToUInt16(v, 0)
+  let toInt32 v = BitConverter.ToInt32(v, 0)
+  let toCharArr bytes = bytes |> Array.map char
 
-    let parseFitFile input = run headerP input |> printResult
+  let byteN: int -> Parser<_, 'UserState> = binMatch "dodo"
 
-    let parseFitFile2 input =
-        match run headerP input with
-        | Success (value, _) -> value
-        | Failure (_) -> failwith "Errors and shit"
+  let byte1 =
+    byteN 1
+    >>= fun b1 -> returnP b1.[0]
+
+  let int16 = byteN 2 |>> toInt16
+  let uint16 = byteN 2 |>> toUInt16
+  let int32 = byteN 4 |>> toInt32
+
+  let charArr n = byteN n |>> toCharArr
+
+  let toBytes (str: string) = Encoding.UTF8.GetBytes(str)
+
+  let stringMatch (value: string) =
+    let label = sprintf "matching string %s" value
+    let stringBytes = Encoding.UTF8.GetBytes(value)
+    matcherConsumer (fun bytes ->
+      let isMatch = bytes = stringBytes
+      if isMatch then
+        (isMatch, None)
+      else
+        let resultString = (toCharArr bytes) |> String
+
+        let error =
+          sprintf "Expected %A (%A), got %A (%A)" value stringBytes resultString bytes
+
+        (isMatch, Some error)) stringBytes.Length label
+
+  type FitParser<'Return> = Parser<'Return, FitState>
+
+  let protocolVersionP: Parser<_, FitState> =
+    let innerFn state =
+      let result =
+        run
+          (matcherConsumer (fun bytes ->
+            let protocolVersion = bytes.[0]
+
+            let interm1 =
+              protocolVersion
+              &&& Constants.protocolVersionMajorMask
+
+            (interm1 <= Constants.protocolVersionCheck, None)) 1 "dong")
+          state
+
+      match result with
+      | Failure (label, error, pos) ->
+          if error = "Ran out of data"
+          then Failure(label, error, pos)
+          else Failure(label, "Protocol version not supported", pos)
+      | Success (v, s) -> Success(v.[0], s)
+
+    { parseFn = innerFn; label = "shabba" }
+    <?> "ddoboobooboobobooboboobob"
+
+
+  let headerSizeP =
+    byte1
+    .>>. getUserState
+    >>= fun (size, ous) ->
+          setUserState { ous with headerSize = size }
+          >>= fun () -> returnP size
+
+  let crcP =
+    let p1 =
+      matchUserState (fun us -> us.headerSize = 12uy) "match header size"
+      >>. returnP 0s
+
+    let p2 =
+      matchUserState (fun us -> us.headerSize = 14uy) "match header size"
+      >>. int16
+
+    p1 <|> p2
+
+  type Header =
+    { size: byte
+      protocolVersion: byte
+      profileVersion: int16
+      dataSize: int
+      dataType: char []
+      crc: int16 }
+
+  type File = { header: Header }
+
+  let headerP: FitParser<_> =
+    (headerSizeP
+     .>>. protocolVersionP
+     .>>. int16
+     .>>. int32
+     .>>. (stringMatch ".FIT" |>> toCharArr)
+     .>>. crcP
+     >>= fun (((((size, protocolVersion), profileVersion), dataSize), dataType), crc) ->
+       returnP
+         { size = size
+           protocolVersion = protocolVersion
+           profileVersion = profileVersion
+           dataSize = dataSize
+           dataType = dataType
+           crc = crc })
+    <?> "header"
+
+  type MessageDefinition =
+    { localMessageNumber: byte
+      architecture: byte
+      globalMessageNumber: uint16 }
+
+  let architectureP =
+    byte1
+    .>>. getUserState
+    >>= fun (architecture, ous) ->
+          setUserState
+            { ous with
+                isBigEndian = (architecture = Constants.BigEndian) }
+          >>= fun () -> returnP architecture
+
+  // Fix this! I want to do: byte1 .>> satisifies
+  let messageDefinitionP: FitParser<_> =
+    matcherConsumer (fun bytes ->
+      let maskedHeader = bytes.[0] &&& Constants.DefinitionMask
+      (maskedHeader = Constants.DefinitionMask, Some("Expected a definition message"))) 1 "dong"
+    >>= fun bytes -> returnP (bytes.[0] &&& Constants.LocalMesgNumMask)
+    .>> byte1
+    .>>. architectureP
+    .>>. uint16
+    >>= fun ((localMessageNumber, architecture), globalMessageNumber) ->
+      returnP
+        { localMessageNumber = localMessageNumber
+          architecture = architecture
+          globalMessageNumber = globalMessageNumber }
+    <?> "messagedefinition"
+
+  // next: messagedefinition parser (move to fileid definition parser but start out with more generic)
+  let fileParser: FitParser<_> =
+    headerP
+    >>= fun header -> returnP { header = header }
+
+  let printResult result =
+    match result with
+    | Success (value, state) -> printfn "%A\n(userState:%A)" value state.userState
+    | Failure (label, error, pos) -> printfn "Error parsing %s at position %i: %s" label pos error
+
+  let prettyParseFitFile input = run headerP input |> printResult
+
+  let parseFitFile input = run fileParser input
+
+  let parseFitFile2 input =
+    match run headerP input with
+    | Success (value, _) -> value
+    | Failure (_) -> failwith "Errors and shit"

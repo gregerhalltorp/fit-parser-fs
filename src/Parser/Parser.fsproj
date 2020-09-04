@@ -3,8 +3,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="IConsumableP.fs" />
+    <Compile Include="Constants.fs" />
     <Compile Include="Parser.fs" />
-    <Compile Include="BinStream.fs" />
   </ItemGroup>
 </Project>

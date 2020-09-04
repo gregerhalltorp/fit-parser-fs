@@ -22,3 +22,10 @@ module Constants =
     let uintMaskF = uint16 0xF
     let uintMaskFFF = uint16 0x0FFF
     let byteMaskF = byte 0xF
+
+    let protocolVersionMajorShift = 4;
+    let protocolVersionMajorMask = (0x0Fuy <<< protocolVersionMajorShift);
+    let protocolMajorVersion = 2uy;
+    let protocolVersionCheck = protocolMajorVersion <<< protocolVersionMajorShift
+
+
