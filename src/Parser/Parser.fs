@@ -10,6 +10,7 @@ module ParseTypes =
   type ParserError = string
   type Position = int
 
+  // Make inputstate optional!
   type InputState<'UserState> =
     { data: byte []
       position: Position
@@ -24,7 +25,10 @@ module ParseTypes =
     { parseFn: (InputState<'UserState> -> Result<'Return, 'UserState>)
       label: ParserLabel }
   // type Parser<'Return> = InputState -> Result<'Return * InputState>
-  type FitState = { headerSize: byte; isBigEndian: bool }
+  type FitState =
+    { headerSize: byte
+      isBigEndian: bool
+      numFields: int }
 
   let run p i = p.parseFn i
 
@@ -102,6 +106,22 @@ module ParseTypes =
   let (.>>) p1 p2 = p1 .>>. p2 |> mapP (fun (a, _) -> a)
   let (>>.) p1 p2 = p1 .>>. p2 |> mapP (fun (_, b) -> b)
 
+  let manyN num parser =
+    let innerFn input =
+      let rec funky count currState resultList =
+        if count = num then
+          Success(resultList |> List.rev, currState)
+        else
+          let result = run parser currState
+          match result with
+          | Failure (_, _, pos) -> Failure("manyN", (sprintf "Tried to read %i items but found only %i" num count), pos)
+          | Success (v, s) -> funky (count + 1) s (v :: resultList)
+
+      funky 0 input []
+
+    { parseFn = innerFn; label = "manyN" }
+
+
   let canConsume state count =
     let endPos = count + state.position
     if endPos > state.data.Length then None else Some(count)
@@ -162,6 +182,7 @@ module ParseTypes =
     byteN 1
     >>= fun b1 -> returnP b1.[0]
 
+  let int8 = byteN 1 |>> toInt32
   let int16 = byteN 2 |>> toInt16
   let uint16 = byteN 2 |>> toUInt16
   let int32 = byteN 4 |>> toInt32
@@ -240,6 +261,12 @@ module ParseTypes =
 
   type File = { header: Header }
 
+  type MessageDefinition =
+    { localMessageNumber: byte
+      architecture: byte
+      globalMessageNumber: uint16
+      numberOfFields: byte }
+
   let headerP: FitParser<_> =
     (headerSizeP
      .>>. protocolVersionP
@@ -257,11 +284,6 @@ module ParseTypes =
            crc = crc })
     <?> "header"
 
-  type MessageDefinition =
-    { localMessageNumber: byte
-      architecture: byte
-      globalMessageNumber: uint16 }
-
   let architectureP =
     byte1
     .>>. getUserState
@@ -270,6 +292,15 @@ module ParseTypes =
             { ous with
                 isBigEndian = (architecture = Constants.BigEndian) }
           >>= fun () -> returnP architecture
+
+  let numFieldsP =
+    byte1
+    .>>. getUserState
+    >>= fun (numFieldsB, ous) ->
+          setUserState
+            { ous with
+                numFields = int numFieldsB }
+          >>= fun () -> returnP numFieldsB
 
   // Fix this! I want to do: byte1 .>> satisifies
   let messageDefinitionP: FitParser<_> =
@@ -280,12 +311,28 @@ module ParseTypes =
     .>> byte1
     .>>. architectureP
     .>>. uint16
-    >>= fun ((localMessageNumber, architecture), globalMessageNumber) ->
-      returnP
-        { localMessageNumber = localMessageNumber
-          architecture = architecture
-          globalMessageNumber = globalMessageNumber }
+    .>>. numFieldsP
+    >>= (fun (((localMessageNumber, architecture), globalMessageNumber), numerOfFields) ->
+    returnP
+      { localMessageNumber = localMessageNumber
+        architecture = architecture
+        globalMessageNumber = globalMessageNumber
+        numberOfFields = numerOfFields})
     <?> "messagedefinition"
+
+  // Implement manyN (special case of many1)
+  // Use fileId messageNumber (another file with constants)
+  let fileIdDefP =
+    let innerFn state =
+      let result = run messageDefinitionP state
+      match result with
+      | Failure (label, error, pos) -> Failure(label, error, pos)
+      | Success (v, s) ->
+          if v.globalMessageNumber = 0us
+          then Success(v, s)
+          else Failure("fileId message definition", "Expected fileId definition", s.position)
+
+    { parseFn = innerFn; label = "aslfk" }
 
   // next: messagedefinition parser (move to fileid definition parser but start out with more generic)
   let fileParser: FitParser<_> =
