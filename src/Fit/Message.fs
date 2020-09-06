@@ -49,6 +49,7 @@ module Message =
          endByte + 1)
 
     let readDataMessage (data: byte []) (messages: Message list) =
+        printfn "%A" data.[0]
         let localMessageNumber = data.[0] &&& LocalMesgNumMask
         printfn "\tlocal message number: %i" localMessageNumber
 

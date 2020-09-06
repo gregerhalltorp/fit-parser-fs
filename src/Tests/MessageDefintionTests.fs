@@ -14,6 +14,66 @@ let architectureLE = 0uy
 let architectureBE = 1uy
 let fileIdMesgNum = [ 0uy; 0uy ]
 let numMsg = 7uy
+let field1 = [ 3uy; 4uy; 140uy ]
+let field2 = [ 4uy; 4uy; 134uy ]
+let field3 = [ 7uy; 4uy; 134uy ]
+let field4 = [ 1uy; 2uy; 132uy ]
+let field5 = [ 2uy; 2uy; 132uy ]
+let field6 = [ 5uy; 2uy; 132uy ]
+let field7 = [ 0uy; 1uy; 0uy ]
+
+let fields =
+  field1
+  @ field2
+  @ field3
+  @ field4
+  @ field5
+  @ field6
+  @ field7
+
+let fieldDef1 =
+  { num = 3uy
+    size = 4uy
+    fieldType = 140uy }
+
+let fieldDef2 =
+  { num = 4uy
+    size = 4uy
+    fieldType = 134uy }
+
+let fieldDef3 =
+  { num = 7uy
+    size = 4uy
+    fieldType = 134uy }
+
+let fieldDef4 =
+  { num = 1uy
+    size = 2uy
+    fieldType = 132uy }
+
+let fieldDef5 =
+  { num = 2uy
+    size = 2uy
+    fieldType = 132uy }
+
+let fieldDef6 =
+  { num = 5uy
+    size = 2uy
+    fieldType = 132uy }
+
+let fieldDef7 =
+  { num = 0uy
+    size = 1uy
+    fieldType = 0uy }
+
+let fieldDefs =
+  [ fieldDef1
+    fieldDef2
+    fieldDef3
+    fieldDef4
+    fieldDef5
+    fieldDef6
+    fieldDef7 ]
 
 let getInput data =
   { data = List.toArray data
@@ -21,7 +81,9 @@ let getInput data =
     userState =
       { headerSize = 0uy
         isBigEndian = false
-        numFields = 0 } }
+        numFields = 0
+        definitions = Map.empty
+        currentDefinition = None } }
 
 [<Test>]
 let ``Fails if data is empty`` () =
@@ -103,29 +165,69 @@ let ``Fails if no number of messages field`` () =
   result |> should equal expected
 
 [<Test>]
+let ``Fails if first field incomplete`` () =
+  let inputList =
+    [ header; reserved; architectureLE ]
+    @ fileIdMesgNum
+    @ [ numMsg ]
+    @ [ 3uy; 4uy ]
+
+  let result = parseDefinition (getInput inputList)
+
+  let expected: Result<MessageDefinition, FitState> =
+    Failure("messagedefinition", "Tried to read 7 items but found only 0", 8)
+
+  result |> should equal expected
+
+[<Test>]
+let ``Fails if not enough fields`` () =
+  let inputList =
+    [ header; reserved; architectureLE ]
+    @ fileIdMesgNum
+    @ [ numMsg ]
+    @ field1
+    @ field2
+    @ field3
+    @ field4
+    @ field5
+    @ field6
+
+  let result = parseDefinition (getInput inputList)
+
+  let expected: Result<MessageDefinition, FitState> =
+    Failure("messagedefinition", "Tried to read 7 items but found only 6", 24)
+
+  result |> should equal expected
+
+
+[<Test>]
 let ``Passes with defintion header`` () =
   let inputList =
     [ header; reserved; architectureLE ]
     @ fileIdMesgNum
     @ [ numMsg ]
+    @ fields
 
   let input = getInput inputList
 
   let result = parseDefinition input
 
-  let state =
-    { data = inputList |> List.toArray
-      position = 6
-      userState =
-        { headerSize = 0uy
-          isBigEndian = false
-          numFields = 7 } }
-
   let definition =
     { localMessageNumber = 0uy
       architecture = architectureLE
       globalMessageNumber = 0us
-      numberOfFields = 7uy }
+      numberOfFields = 7uy
+      fields = fieldDefs }
+
+  let state =
+    { data = inputList |> List.toArray
+      position = 27
+      userState =
+        { headerSize = 0uy
+          isBigEndian = false
+          numFields = 7
+          definitions = Map(seq{(0uy, definition)})
+          currentDefinition = None } }
 
   let expected: Result<MessageDefinition, FitState> = Success(definition, state)
 
@@ -137,24 +239,28 @@ let ``Passes with defintion header and big endian architecture`` () =
     [ header; reserved; architectureBE ]
     @ fileIdMesgNum
     @ [ numMsg ]
+    @ fields
 
   let input = getInput inputList
 
   let result = parseDefinition input
 
-  let state =
-    { data = inputList |> List.toArray
-      position = 6
-      userState =
-        { headerSize = 0uy
-          isBigEndian = true
-          numFields = 7 } }
-
   let definition =
     { localMessageNumber = 0uy
       architecture = architectureBE
       globalMessageNumber = 0us
-      numberOfFields = numMsg }
+      numberOfFields = numMsg
+      fields = fieldDefs }
+
+  let state =
+    { data = inputList |> List.toArray
+      position = 27
+      userState =
+        { headerSize = 0uy
+          isBigEndian = true
+          numFields = 7
+          definitions = Map.empty.Add(0uy, definition)
+          currentDefinition = None } }
 
   let expected: Result<MessageDefinition, FitState> = Success(definition, state)
 
@@ -164,14 +270,14 @@ let ``Passes with defintion header and big endian architecture`` () =
 let ``FileId parser fails with incorrect global message number`` () =
   let part1 = [ header; reserved; architectureLE ]
   let part2 = [ 0uy; 4uy; numMsg ]
-  let inputList = part1 @ part2
+  let inputList = part1 @ part2 @ fields
 
   let input = getInput inputList
 
   let result = run fileIdDefP input
 
   let expected: Result<MessageDefinition, FitState> =
-    Failure("fileId message definition", "Expected fileId definition", 6)
+    Failure("fileId message definition", "Expected fileId definition", 27)
 
   result |> should equal expected
 
@@ -182,24 +288,28 @@ let ``FileId parser passes with correct global message number`` () =
     [ header; reserved; architectureLE ]
     @ fileIdMesgNum
     @ [ numMsg ]
+    @ fields
 
   let input = getInput inputList
 
   let result = run fileIdDefP input
 
-  let state =
-    { data = inputList |> List.toArray
-      position = 6
-      userState =
-        { headerSize = 0uy
-          isBigEndian = false
-          numFields = 7 } }
-
   let definition =
     { localMessageNumber = 0uy
       architecture = architectureLE
       globalMessageNumber = 0us
-      numberOfFields = numMsg }
+      numberOfFields = numMsg
+      fields = fieldDefs }
+
+  let state =
+    { data = inputList |> List.toArray
+      position = 27
+      userState =
+        { headerSize = 0uy
+          isBigEndian = false
+          numFields = 7
+          definitions = Map.empty.Add(0uy, definition)
+          currentDefinition = None } }
 
   let expected: Result<MessageDefinition, FitState> = Success(definition, state)
 

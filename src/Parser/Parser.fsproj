@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Constants.fs" />
-    <Compile Include="Parser.fs" />
+    <Compile Include="BinParser.fs" />
+    <Compile Include="FitParser.fs" />
   </ItemGroup>
 </Project>

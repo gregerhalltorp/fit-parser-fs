@@ -15,7 +15,12 @@ let main argv =
     ParseTypes.parseFitFile
       { data = data
         position = 0
-        userState = { headerSize = 0uy } }
+        userState = {
+          headerSize = 0uy
+          isBigEndian = false
+          numFields = 0
+          definitions = Map.empty
+          currentDefinition = None } }
 
   printfn "%A" result
   // let valid = Crc.validateCrc (uint16 0) data

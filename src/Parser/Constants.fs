@@ -16,5 +16,11 @@ module Constants =
   let BigEndian = 1uy
 
 module ErrorMessages =
-  let errorMessage thisMajor sdkMajor sdkMinor =
+  let protocolErrorMessage thisMajor sdkMajor sdkMinor =
     sprintf "FIT decode error: Protocol Version %i.X not supported by SDK Protocol Ver%i.%i" thisMajor sdkMajor sdkMinor
+
+  let missingDefinitionErrorMessage localMesgNum position =
+    sprintf
+      "Decode:DecodeNextMessage - FIT decode error: Missing message definition for local message number %A at stream position %i"
+      localMesgNum
+      position

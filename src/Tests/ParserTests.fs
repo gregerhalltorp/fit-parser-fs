@@ -17,7 +17,9 @@ type ``manyN tests``() =
         userState =
           { headerSize = 0uy
             isBigEndian = false
-            numFields = 0 } }
+            numFields = 0
+            definitions = Map.empty
+            currentDefinition = None } }
 
     let dodo = manyN 0 byte1
 
@@ -35,7 +37,9 @@ type ``manyN tests``() =
         userState =
           { headerSize = 0uy
             isBigEndian = false
-            numFields = 0 } }
+            numFields = 0
+            definitions = Map.empty
+            currentDefinition = None } }
 
     let dodo = manyN 1 byte1
 
@@ -54,7 +58,9 @@ type ``manyN tests``() =
         userState =
           { headerSize = 0uy
             isBigEndian = false
-            numFields = 0 } }
+            numFields = 0
+            definitions = Map.empty
+            currentDefinition = None } }
 
     let dodo = manyN 5 byte1
 
@@ -73,7 +79,9 @@ type ``manyN tests``() =
         userState =
           { headerSize = 0uy
             isBigEndian = false
-            numFields = 0 } }
+            numFields = 0
+            definitions = Map.empty
+            currentDefinition = None } }
 
     let dodo = manyN 6 byte1
 

@@ -25,10 +25,24 @@ module ParseTypes =
     { parseFn: (InputState<'UserState> -> Result<'Return, 'UserState>)
       label: ParserLabel }
   // type Parser<'Return> = InputState -> Result<'Return * InputState>
+  type FieldDefinition =
+    { num: byte
+      size: byte
+      fieldType: byte }
+
+  type MessageDefinition =
+    { localMessageNumber: byte
+      architecture: byte
+      globalMessageNumber: uint16
+      numberOfFields: byte
+      fields: FieldDefinition list }
+
   type FitState =
     { headerSize: byte
       isBigEndian: bool
-      numFields: int }
+      numFields: int
+      definitions: Map<byte, MessageDefinition>
+      currentDefinition: MessageDefinition option }
 
   let run p i = p.parseFn i
 
@@ -259,13 +273,9 @@ module ParseTypes =
       dataType: char []
       crc: int16 }
 
-  type File = { header: Header }
-
-  type MessageDefinition =
-    { localMessageNumber: byte
-      architecture: byte
-      globalMessageNumber: uint16
-      numberOfFields: byte }
+  type File =
+    { header: Header
+      definitions: MessageDefinition list }
 
   let headerP: FitParser<_> =
     (headerSizeP
@@ -297,10 +307,25 @@ module ParseTypes =
     byte1
     .>>. getUserState
     >>= fun (numFieldsB, ous) ->
-          setUserState
-            { ous with
-                numFields = int numFieldsB }
+          setUserState { ous with numFields = int numFieldsB }
           >>= fun () -> returnP numFieldsB
+
+  let fieldP =
+    byte1
+    .>>. byte1
+    .>>. byte1
+    >>= (fun ((fieldNum, fieldSize), fieldType) ->
+    returnP
+      { num = fieldNum
+        size = fieldSize
+        fieldType = fieldType })
+
+  let fieldsP =
+    let parser =
+      getUserState
+      >>= fun { numFields = numFields } -> manyN numFields fieldP
+
+    parser
 
   // Fix this! I want to do: byte1 .>> satisifies
   let messageDefinitionP: FitParser<_> =
@@ -312,16 +337,38 @@ module ParseTypes =
     .>>. architectureP
     .>>. uint16
     .>>. numFieldsP
-    >>= (fun (((localMessageNumber, architecture), globalMessageNumber), numerOfFields) ->
-    returnP
+    .>>. fieldsP
+    .>>. getUserState
+    >>= (fun (((((localMessageNumber, architecture), globalMessageNumber), numerOfFields), fields), ous) ->
+    let definition =
       { localMessageNumber = localMessageNumber
         architecture = architecture
         globalMessageNumber = globalMessageNumber
-        numberOfFields = numerOfFields})
+        numberOfFields = numerOfFields
+        fields = fields }
+
+    setUserState
+      { ous with
+          definitions = ous.definitions.Add(localMessageNumber, definition) }
+    >>= fun () -> returnP definition)
     <?> "messagedefinition"
 
-  // Implement manyN (special case of many1)
-  // Use fileId messageNumber (another file with constants)
+  // set the current definition in the userstate
+  let dataMessageP: FitParser<_> =
+    matcherConsumer (fun bytes ->
+      let maskedHeader = bytes.[0] &&& Constants.DefinitionMask
+      (maskedHeader = Constants.DataMask, Some("Expected a data message"))) 1 "dong"
+    >>= (fun bytes -> returnP (bytes.[0] &&& Constants.LocalMesgNumMask))
+    >>= (fun localMessageNumber -> 
+    matchUserState (fun (ous:FitState) -> ous.definitions.ContainsKey(localMessageNumber)) "shabba"
+      >>= (fun _ -> returnP localMessageNumber))
+    .>>. getUserState
+    >>= (fun (lmn, ous) -> 
+      setUserState {ous with currentDefinition = Some(ous.definitions.[lmn])}
+      >>= fun () -> returnP lmn)
+    <?> "datamessage"
+
+  // TODO: Use fileId messageNumber (another file with constants)
   let fileIdDefP =
     let innerFn state =
       let result = run messageDefinitionP state
@@ -334,10 +381,13 @@ module ParseTypes =
 
     { parseFn = innerFn; label = "aslfk" }
 
-  // next: messagedefinition parser (move to fileid definition parser but start out with more generic)
   let fileParser: FitParser<_> =
     headerP
-    >>= fun header -> returnP { header = header }
+    .>>. fileIdDefP
+    >>= (fun (header, fileIdDefinition) ->
+    returnP
+      { header = header
+        definitions = [ fileIdDefinition ] })
 
   let printResult result =
     match result with

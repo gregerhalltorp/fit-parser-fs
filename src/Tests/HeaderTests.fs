@@ -25,7 +25,9 @@ let getInput data =
     userState =
       { headerSize = 0uy
         isBigEndian = false
-        numFields = 0 } }
+        numFields = 0
+        definitions = Map.empty
+        currentDefinition = None } }
 
 [<Test>]
 let ``Fails if data is empty`` () =
@@ -208,7 +210,9 @@ let ``Succeeds if headerSize is 12 and header is 12 bytes`` () =
       userState =
         { headerSize = 12uy
           isBigEndian = false
-          numFields = 0 } }
+          numFields = 0
+          definitions = Map.empty
+          currentDefinition = None} }
 
   let expected: Result<Header, FitState> = Success(header, state)
 
@@ -259,7 +263,9 @@ let ``Succeeds if headerSize is 14 and header is 14 bytes`` () =
       userState =
         { headerSize = 14uy
           isBigEndian = false
-          numFields = 0 } }
+          numFields = 0
+          definitions = Map.empty
+          currentDefinition = None } }
 
   let expected: Result<Header, FitState> = Success(header, state)
 
