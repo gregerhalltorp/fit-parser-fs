@@ -106,6 +106,8 @@ module Parser2 =
 
   let (<|>) = orElse
 
+  let choice parsers = List.reduce (<|>) parsers
+
   let mapP f = bindP (f >> returnP)
   let (|>>) x f = mapP f x
 
@@ -118,6 +120,15 @@ module Parser2 =
     p1
     .>>. p2
     |>> fun (_, b) -> b
+
+  let applyP fP xP =
+    (fP .>>. xP)
+    |>> fun (f,x) -> f x
+
+  let (<*>) = applyP
+
+  let lift2 f xP yP =
+    returnP f <*> xP <*> yP
 
   let manyN num parser =
     { parseFn =

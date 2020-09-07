@@ -221,7 +221,7 @@ let ``messageDefinitionP succeeds with defintion header`` () =
       architecture = architectureLE
       globalMessageNumber = 0us
       numberOfFields = 7uy
-      fields = fieldDefs }
+      fieldDefinitions = fieldDefs }
 
   let state =
     { data = inputList |> List.toArray
@@ -254,7 +254,7 @@ let ``messageDefinitionP succeeds with defintion header and big endian architect
       architecture = architectureBE
       globalMessageNumber = 0us
       numberOfFields = numMsg
-      fields = fieldDefs }
+      fieldDefinitions = fieldDefs }
 
   let state =
     { data = inputList |> List.toArray
@@ -303,7 +303,7 @@ let ``fileId succeeds with correct global message number`` () =
       architecture = architectureLE
       globalMessageNumber = 0us
       numberOfFields = numMsg
-      fields = fieldDefs }
+      fieldDefinitions = fieldDefs }
 
   let state =
     { data = inputList |> List.toArray

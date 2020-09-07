@@ -28,7 +28,7 @@ let definition =
     architecture = architectureLE
     globalMessageNumber = 0us
     numberOfFields = 7uy
-    fields = fieldDefs }
+    fieldDefinitions = fieldDefs }
 
 [<Test>]
 let ``dataMessageP fails if data is empty`` () =

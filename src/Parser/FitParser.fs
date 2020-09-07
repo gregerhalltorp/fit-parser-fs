@@ -6,6 +6,8 @@ open BinParser
 module FitParser =
   // let fitFileParser = new BinParser<_>()
 
+  // TODO: write tests for this!
+  // TODO: switch more binds to maps, think more about how to handle set/get userstate
   let fileParser =
     headerP
     .>>. fileIdDefP

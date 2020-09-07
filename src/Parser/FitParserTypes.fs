@@ -12,7 +12,9 @@ module FitParserTypes =
       architecture: byte
       globalMessageNumber: uint16
       numberOfFields: byte
-      fields: FieldDefinition list }
+      fieldDefinitions: FieldDefinition list }
+
+  type DataMessage = { localMessageNumber: byte }
 
   type Header =
     { size: byte

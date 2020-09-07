@@ -22,7 +22,7 @@ module MessageDefinitionParser =
           setUserState { ous with numFields = int numFieldsB }
           >>= fun () -> returnP numFieldsB
 
-  let fieldP =
+  let fieldDefinitionP =
     fitFileParser.byte1
     .>>. fitFileParser.byte1
     .>>. fitFileParser.byte1
@@ -32,9 +32,9 @@ module MessageDefinitionParser =
         size = fieldSize
         fieldType = fieldType })
 
-  let fieldsP =
+  let fieldDefinitionsP =
     getUserState
-    >>= fun { numFields = numFields } -> manyN numFields fieldP
+    >>= fun { numFields = numFields } -> manyN numFields fieldDefinitionP
 
   let messageDefinitionP =
     matcherConsumer (fun bytes ->
@@ -45,15 +45,15 @@ module MessageDefinitionParser =
     .>>. architectureP
     .>>. fitFileParser.uint16
     .>>. numFieldsP
-    .>>. fieldsP
+    .>>. fieldDefinitionsP
     .>>. getUserState
-    >>= (fun (((((localMessageNumber, architecture), globalMessageNumber), numberOfFields), fields), ous) ->
+    >>= (fun (((((localMessageNumber, architecture), globalMessageNumber), numberOfFields), fieldDefinitions), ous) ->
     let definition =
       { localMessageNumber = localMessageNumber
         architecture = architecture
         globalMessageNumber = globalMessageNumber
         numberOfFields = numberOfFields
-        fields = fields }
+        fieldDefinitions = fieldDefinitions }
 
     setUserState
       { ous with
