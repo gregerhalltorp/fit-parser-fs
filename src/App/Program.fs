@@ -3,7 +3,7 @@
 open Fit
 open FileReader
 open System
-open Parse
+open FitParse
 
 [<EntryPoint>]
 let main argv =
@@ -12,7 +12,7 @@ let main argv =
   let data = getFileData fileName
 
   let result =
-    ParseTypes.parseFitFile
+    parseFitFile
       { data = data
         position = 0
         userState = {

@@ -10,8 +10,9 @@
   <ItemGroup>
     <Compile Include="HeaderTests.fs" />
     <Compile Include="MessageDefintionTests.fs" />
-    <Compile Include="ParserTests.fs" />
+    <Compile Include="BinParserTests.fs" />
     <Compile Include="DataMessageTests.fs" />
+    <Compile Include="FitFileTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FsUnit" Version="4.0.1" />

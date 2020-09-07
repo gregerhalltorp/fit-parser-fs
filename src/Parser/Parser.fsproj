@@ -5,6 +5,10 @@
   <ItemGroup>
     <Compile Include="Constants.fs" />
     <Compile Include="BinParser.fs" />
+    <Compile Include="FitParserTypes.fs" />
+    <Compile Include="HeaderParser.fs" />
+    <Compile Include="MessageDefinitionParser.fs" />
+    <Compile Include="DataMessageParser.fs" />
     <Compile Include="FitParser.fs" />
   </ItemGroup>
 </Project>

@@ -2,7 +2,8 @@ module HeaderTests
 
 open NUnit.Framework
 open FsUnit
-open Parse.ParseTypes
+open FitParse
+open BinParser
 
 [<SetUp>]
 let Setup () = ()
@@ -30,7 +31,7 @@ let getInput data =
         currentDefinition = None } }
 
 [<Test>]
-let ``Fails if data is empty`` () =
+let ``headerP fails if data is empty`` () =
   let input = getInput []
 
   let result = parseHeader input
@@ -39,7 +40,7 @@ let ``Fails if data is empty`` () =
   result |> should equal expected
 
 [<Test>]
-let ``Fails if length = 1`` () =
+let ``headerP fails if length = 1`` () =
   let input = getInput [ headerSize14 ]
   let result = parseHeader input
 
@@ -48,7 +49,7 @@ let ``Fails if length = 1`` () =
   result |> should equal expected
 
 [<Test>]
-let ``Fails for bad protocolVersion`` () =
+let ``headerP fails for bad protocolVersion`` () =
   let input =
     getInput [ headerSize14
                badProtocolVersion ]
@@ -61,7 +62,7 @@ let ``Fails for bad protocolVersion`` () =
   result |> should equal expected
 
 [<Test>]
-let ``Fails when length = 2, good protocolVersion`` () =
+let ``headerP fails when length = 2, good protocolVersion`` () =
   let input =
     getInput [ headerSize14
                goodProtocolVersion ]
@@ -73,21 +74,21 @@ let ``Fails when length = 2, good protocolVersion`` () =
   result |> should equal expected
 
 [<Test>]
-let ``Fails when length = 3 or 4`` () =
+let ``headerP fails when length = 3 or 4`` () =
   let goodPart = [ headerSize14; goodProtocolVersion ]
   let input1 = getInput (goodPart @ [ 1uy ])
   let input2 = getInput (goodPart @ profileVersion)
   let result1 = parseHeader input1
   let result2 = parseHeader input2
 
-  let expected1: Result<Header, FitState> = Failure("header", "Ran out of data", 2)
+  let expected1: Result<Header, FitState> = Failure("header", "Ran out of data", 3)
   let expected2: Result<Header, FitState> = Failure("header", "Ran out of data", 4)
 
   result1 |> should equal expected1
   result2 |> should equal expected2
 
 [<Test>]
-let ``Fails when length = 5, 6, 7 or 8`` () =
+let ``headerP fails when length = 5, 6, 7 or 8`` () =
   let goodPart =
     [ headerSize14; goodProtocolVersion ]
     @ profileVersion
@@ -102,16 +103,18 @@ let ``Fails when length = 5, 6, 7 or 8`` () =
   let result3 = parseHeader input3
   let result4 = parseHeader input4
 
-  let expected1: Result<Header, FitState> = Failure("header", "Ran out of data", 4)
-  let expected2: Result<Header, FitState> = Failure("header", "Ran out of data", 8)
+  let expected1: Result<Header, FitState> = Failure("header", "Ran out of data", 5)
+  let expected2: Result<Header, FitState> = Failure("header", "Ran out of data", 6)
+  let expected3: Result<Header, FitState> = Failure("header", "Ran out of data", 7)
+  let expected4: Result<Header, FitState> = Failure("header", "Ran out of data", 8)
 
   result1 |> should equal expected1
-  result2 |> should equal expected1
-  result3 |> should equal expected1
-  result4 |> should equal expected2
+  result2 |> should equal expected2
+  result3 |> should equal expected3
+  result4 |> should equal expected4
 
 [<Test>]
-let ``Fails when length = 9, 10, 11`` () =
+let ``headerP fails when length = 9, 10, 11`` () =
   let goodPart =
     [ headerSize14; goodProtocolVersion ]
     @ profileVersion
@@ -127,14 +130,16 @@ let ``Fails when length = 9, 10, 11`` () =
   let result2 = parseHeader input2
   let result3 = parseHeader input3
 
-  let expected1: Result<Header, FitState> = Failure("header", "Ran out of data", 8)
+  let expected1: Result<Header, FitState> = Failure("header", "Ran out of data", 9)
+  let expected2: Result<Header, FitState> = Failure("header", "Ran out of data", 10)
+  let expected3: Result<Header, FitState> = Failure("header", "Ran out of data", 11)
 
   result1 |> should equal expected1
-  result2 |> should equal expected1
-  result3 |> should equal expected1
+  result2 |> should equal expected2
+  result3 |> should equal expected3
 
 [<Test>]
-let ``Fails when data type field is not correct`` () =
+let ``headerP fails when data type field is not correct`` () =
   let inputList =
     [ headerSize14; goodProtocolVersion ]
     @ profileVersion
@@ -154,7 +159,7 @@ let ``Fails when data type field is not correct`` () =
   result |> should equal expected
 
 [<Test>]
-let ``Fails when headerSize is 14 but header is 12 or 13 bytes`` () =
+let ``headerP fails when headerSize is 14 but header is 12 or 13 bytes`` () =
   let inputList =
     [ headerSize14; goodProtocolVersion ]
     @ profileVersion
@@ -167,13 +172,14 @@ let ``Fails when headerSize is 14 but header is 12 or 13 bytes`` () =
   let result1 = parseHeader input1
   let result2 = parseHeader input2
 
-  let expected: Result<Header, FitState> = Failure("header", "Ran out of data", 12)
+  let expected1: Result<Header, FitState> = Failure("header", "Ran out of data", 12)
+  let expected2: Result<Header, FitState> = Failure("header", "Ran out of data", 13)
 
-  result1 |> should equal expected
-  result2 |> should equal expected
+  result1 |> should equal expected1
+  result2 |> should equal expected2
 
 [<Test>]
-let ``Succeeds if headerSize is 12 and header is 12 bytes`` () =
+let ``headerP succeeds if headerSize is 12 and header is 12 bytes`` () =
   let inputList =
     [ headerSize12; goodProtocolVersion ]
     @ profileVersion
@@ -193,19 +199,7 @@ let ``Succeeds if headerSize is 12 and header is 12 bytes`` () =
       crc = 0s }
 
   let state =
-    { data =
-        [| 12uy
-           16uy
-           249uy
-           7uy
-           175uy
-           200uy
-           0uy
-           0uy
-           46uy
-           70uy
-           73uy
-           84uy |]
+    { data = inputList |> List.toArray
       position = 12
       userState =
         { headerSize = 12uy
@@ -219,7 +213,7 @@ let ``Succeeds if headerSize is 12 and header is 12 bytes`` () =
   result |> should equal expected
 
 [<Test>]
-let ``Succeeds if headerSize is 14 and header is 14 bytes`` () =
+let ``headerP succeeds if headerSize is 14 and header is 14 bytes`` () =
   let inputList =
     [ headerSize14; goodProtocolVersion ]
     @ profileVersion
@@ -234,7 +228,6 @@ let ``Succeeds if headerSize is 14 and header is 14 bytes`` () =
   let expectedString =
     sprintf "Expected %A (%A), got %A (%A)" ".FIT" (List.toArray goodDataType) "FGHI" (List.toArray badDataType)
 
-
   let header =
     { size = 14uy
       protocolVersion = 16uy
@@ -244,21 +237,7 @@ let ``Succeeds if headerSize is 14 and header is 14 bytes`` () =
       crc = -21101s }
 
   let state =
-    { data =
-        [| 14uy
-           16uy
-           249uy
-           7uy
-           175uy
-           200uy
-           0uy
-           0uy
-           46uy
-           70uy
-           73uy
-           84uy
-           147uy
-           173uy |]
+    { data = inputList |> List.toArray
       position = 14
       userState =
         { headerSize = 14uy

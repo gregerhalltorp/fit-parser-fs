@@ -2,12 +2,24 @@ module MessageDefinitionTests
 
 open NUnit.Framework
 open FsUnit
-open Parse.ParseTypes
+open FitParse
+open BinParser
 
 [<SetUp>]
 let Setup () = ()
 
 let parseDefinition input = run messageDefinitionP input
+
+let getInput data =
+  { data = List.toArray data
+    position = 0
+    userState =
+      { headerSize = 0uy
+        isBigEndian = false
+        numFields = 0
+        definitions = Map.empty
+        currentDefinition = None } }
+
 let header = 64uy
 let reserved = 0uy
 let architectureLE = 0uy
@@ -75,18 +87,8 @@ let fieldDefs =
     fieldDef6
     fieldDef7 ]
 
-let getInput data =
-  { data = List.toArray data
-    position = 0
-    userState =
-      { headerSize = 0uy
-        isBigEndian = false
-        numFields = 0
-        definitions = Map.empty
-        currentDefinition = None } }
-
 [<Test>]
-let ``Fails if data is empty`` () =
+let ``messageDefinitionP fails if data is empty`` () =
   let input = getInput []
 
   let result = parseDefinition input
@@ -97,7 +99,7 @@ let ``Fails if data is empty`` () =
   result |> should equal expected
 
 [<Test>]
-let ``Fails if not a definition message`` () =
+let ``messageDefinitionP fails if not a definition message`` () =
   let input = getInput [ 0uy ]
 
   let result = parseDefinition input
@@ -108,7 +110,7 @@ let ``Fails if not a definition message`` () =
   result |> should equal expected
 
 [<Test>]
-let ``Fails if no reserved field`` () =
+let ``messageDefinitionP fails if no reserved field`` () =
   let input = getInput [ header ]
 
   let result = parseDefinition input
@@ -119,7 +121,7 @@ let ``Fails if no reserved field`` () =
   result |> should equal expected
 
 [<Test>]
-let ``Fails if no architecture field`` () =
+let ``messageDefinitionP fails if no architecture field`` () =
   let input = getInput [ header; reserved ]
 
   let result = parseDefinition input
@@ -130,7 +132,7 @@ let ``Fails if no architecture field`` () =
   result |> should equal expected
 
 [<Test>]
-let ``Fails if no global message number field`` () =
+let ``messageDefinitionP fails if no global message number field`` () =
   let input1 =
     getInput [ header
                reserved
@@ -145,14 +147,17 @@ let ``Fails if no global message number field`` () =
   let result1 = parseDefinition input1
   let result2 = parseDefinition input2
 
-  let expected: Result<MessageDefinition, FitState> =
+  let expected1: Result<MessageDefinition, FitState> =
     Failure("messagedefinition", "Ran out of data", 3)
 
-  result1 |> should equal expected
-  result2 |> should equal expected
+  let expected2: Result<MessageDefinition, FitState> =
+    Failure("messagedefinition", "Ran out of data", 4)
+
+  result1 |> should equal expected1
+  result2 |> should equal expected2
 
 [<Test>]
-let ``Fails if no number of messages field`` () =
+let ``messageDefinitionP fails if no number of messages field`` () =
   let inputList =
     [ header; reserved; architectureLE ]
     @ fileIdMesgNum
@@ -165,7 +170,7 @@ let ``Fails if no number of messages field`` () =
   result |> should equal expected
 
 [<Test>]
-let ``Fails if first field incomplete`` () =
+let ``messageDefinitionP fails if first field incomplete`` () =
   let inputList =
     [ header; reserved; architectureLE ]
     @ fileIdMesgNum
@@ -180,7 +185,7 @@ let ``Fails if first field incomplete`` () =
   result |> should equal expected
 
 [<Test>]
-let ``Fails if not enough fields`` () =
+let ``messageDefinitionP fails if not enough fields`` () =
   let inputList =
     [ header; reserved; architectureLE ]
     @ fileIdMesgNum
@@ -199,9 +204,8 @@ let ``Fails if not enough fields`` () =
 
   result |> should equal expected
 
-
 [<Test>]
-let ``Passes with defintion header`` () =
+let ``messageDefinitionP succeeds with defintion header`` () =
   let inputList =
     [ header; reserved; architectureLE ]
     @ fileIdMesgNum
@@ -226,7 +230,7 @@ let ``Passes with defintion header`` () =
         { headerSize = 0uy
           isBigEndian = false
           numFields = 7
-          definitions = Map(seq{(0uy, definition)})
+          definitions = Map(seq { (0uy, definition) })
           currentDefinition = None } }
 
   let expected: Result<MessageDefinition, FitState> = Success(definition, state)
@@ -234,7 +238,7 @@ let ``Passes with defintion header`` () =
   result |> should equal expected
 
 [<Test>]
-let ``Passes with defintion header and big endian architecture`` () =
+let ``messageDefinitionP succeeds with defintion header and big endian architecture`` () =
   let inputList =
     [ header; reserved; architectureBE ]
     @ fileIdMesgNum
@@ -267,7 +271,7 @@ let ``Passes with defintion header and big endian architecture`` () =
   result |> should equal expected
 
 [<Test>]
-let ``FileId parser fails with incorrect global message number`` () =
+let ``fileId parser fails with incorrect global message number`` () =
   let part1 = [ header; reserved; architectureLE ]
   let part2 = [ 0uy; 4uy; numMsg ]
   let inputList = part1 @ part2 @ fields
@@ -283,7 +287,7 @@ let ``FileId parser fails with incorrect global message number`` () =
 
 
 [<Test>]
-let ``FileId parser passes with correct global message number`` () =
+let ``fileId succeeds with correct global message number`` () =
   let inputList =
     [ header; reserved; architectureLE ]
     @ fileIdMesgNum
@@ -314,5 +318,3 @@ let ``FileId parser passes with correct global message number`` () =
   let expected: Result<MessageDefinition, FitState> = Success(definition, state)
 
   result |> should equal expected
-
-// fileIdDefP

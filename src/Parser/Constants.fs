@@ -1,5 +1,6 @@
-namespace Fit
+namespace FitParse
 
+[<AutoOpen>]
 module Constants =
   let protocolVersionMajorShift = 4
   let protocolVersionMajorMask = (0x0Fuy <<< protocolVersionMajorShift)

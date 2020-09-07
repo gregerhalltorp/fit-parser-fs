@@ -2,7 +2,8 @@ module DataMessageTests
 
 open NUnit.Framework
 open FsUnit
-open Parse.ParseTypes
+open FitParse
+open BinParser
 open MessageDefinitionTests
 
 [<SetUp>]
@@ -30,7 +31,7 @@ let definition =
     fields = fieldDefs }
 
 [<Test>]
-let ``Fails if data is empty`` () =
+let ``dataMessageP fails if data is empty`` () =
   let input = getInput []
   let result = parseMessage input
 
@@ -40,7 +41,7 @@ let ``Fails if data is empty`` () =
   result |> should equal expected
 
 [<Test>]
-let ``Fails when header not datamessage`` () =
+let ``dataMessageP fails when header not datamessage`` () =
   let input = getInput [ 64uy ]
   let result = parseMessage input
 
@@ -50,7 +51,7 @@ let ``Fails when header not datamessage`` () =
   result |> should equal expected
 
 [<Test>]
-let ``Fails when userState defintions empty`` () =
+let ``dataMessageP fails when userState defintions empty`` () =
   let input = getInput [ header ]
   let result = parseMessage input
 
@@ -60,7 +61,7 @@ let ``Fails when userState defintions empty`` () =
   result |> should equal expected
 
 [<Test>]
-let ``Fails when userState defintions does not contain local message number`` () =
+let ``dataMessageP fails when userState defintions does not contain local message number`` () =
   let doobie = getInput [ header ]
 
   let input =
@@ -70,7 +71,6 @@ let ``Fails when userState defintions does not contain local message number`` ()
               definitions = Map(seq { (1uy, definition) }) } }
 
   let result = parseMessage input
-  printfn "%A" (header &&& 0x0Fuy)
 
   let expected: Result<byte, FitState> =
     Failure("datamessage", "UserState didn't match", 1)
@@ -78,7 +78,7 @@ let ``Fails when userState defintions does not contain local message number`` ()
   result |> should equal expected
 
 [<Test>]
-let ``Fails when userState defintions empty2`` () =
+let ``dataMessageP happy trail`` () =
   let inputList = [ header ]
   let basicInput = getInput inputList
 
@@ -99,7 +99,6 @@ let ``Fails when userState defintions empty2`` () =
           currentDefinition = Some(definition)} }
 
   let result = parseMessage input
-  printfn "%A" (header &&& 0x0Fuy)
 
   let expected: Result<byte, FitState> = Success(0uy, state)
 
