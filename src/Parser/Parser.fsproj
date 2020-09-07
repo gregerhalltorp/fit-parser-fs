@@ -3,6 +3,11 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../Fit2/Fit2.fsproj">
+      <Name>Fit2.fsproj</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="Constants.fs" />
     <Compile Include="BinParser.fs" />
     <Compile Include="FitParserTypes.fs" />

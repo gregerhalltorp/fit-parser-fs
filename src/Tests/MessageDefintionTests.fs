@@ -4,6 +4,8 @@ open NUnit.Framework
 open FsUnit
 open FitParse
 open BinParser
+open Fit2
+open Fit2.Messages
 
 [<SetUp>]
 let Setup () = ()
@@ -219,7 +221,7 @@ let ``messageDefinitionP succeeds with defintion header`` () =
   let definition =
     { localMessageNumber = 0uy
       architecture = architectureLE
-      globalMessageNumber = 0us
+      globalMessageNumber = Types.getMesgNum 0us
       numberOfFields = 7uy
       fieldDefinitions = fieldDefs }
 
@@ -252,7 +254,7 @@ let ``messageDefinitionP succeeds with defintion header and big endian architect
   let definition =
     { localMessageNumber = 0uy
       architecture = architectureBE
-      globalMessageNumber = 0us
+      globalMessageNumber = Types.getMesgNum 0us
       numberOfFields = numMsg
       fieldDefinitions = fieldDefs }
 
@@ -301,7 +303,7 @@ let ``fileId succeeds with correct global message number`` () =
   let definition =
     { localMessageNumber = 0uy
       architecture = architectureLE
-      globalMessageNumber = 0us
+      globalMessageNumber = Types.getMesgNum 0us
       numberOfFields = numMsg
       fieldDefinitions = fieldDefs }
 

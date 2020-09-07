@@ -5,6 +5,8 @@ open FsUnit
 open FitParse
 open BinParser
 open MessageDefinitionTests
+open Fit2
+open Fit2.Messages
 
 [<SetUp>]
 let Setup () = ()
@@ -26,7 +28,7 @@ let header = 0uy
 let definition =
   { localMessageNumber = 0uy
     architecture = architectureLE
-    globalMessageNumber = 0us
+    globalMessageNumber = Types.getMesgNum 0us
     numberOfFields = 7uy
     fieldDefinitions = fieldDefs }
 

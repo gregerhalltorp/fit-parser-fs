@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="MesgNum.fs" />
+    <Compile Include="Types.fs" />
+    <Compile Include="Messages.fs" />
+  </ItemGroup>
+</Project>

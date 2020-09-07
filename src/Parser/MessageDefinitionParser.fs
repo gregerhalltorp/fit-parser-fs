@@ -1,6 +1,9 @@
 namespace FitParse
 
 open BinParser
+open Fit2
+open Fit2.Messages
+open Fit2.Types
 
 [<AutoOpen>]
 module MessageDefinitionParser =
@@ -51,7 +54,7 @@ module MessageDefinitionParser =
     let definition =
       { localMessageNumber = localMessageNumber
         architecture = architecture
-        globalMessageNumber = globalMessageNumber
+        globalMessageNumber = getMesgNum globalMessageNumber
         numberOfFields = numberOfFields
         fieldDefinitions = fieldDefinitions }
 
@@ -68,7 +71,7 @@ module MessageDefinitionParser =
       match result with
       | Failure (label, error, pos) -> Failure(label, error, pos)
       | Success (v, s) ->
-          if v.globalMessageNumber = 0us
+          if v.globalMessageNumber = MesgNum.FileId
           then Success(v, s)
           else Failure("fileId message definition", "Expected fileId definition", s.position)
 
