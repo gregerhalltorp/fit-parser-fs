@@ -6,6 +6,8 @@ open System
 open System.IO
 //open ExcelDataReader
 
+// Read "headline" into a ProfileTypes file discriminated union
+// Read FitBaseType into it also
 type ExcelProfile = ExcelFile<"Profile.xlsx", "Types">
 exception NoTypeException of string
 

@@ -6,7 +6,7 @@ open FitParse
 open BinParser
 open MessageDefinitionTests
 open Fit2
-open Fit2.Messages
+open Fit2.TypeDefinitions
 
 [<SetUp>]
 let Setup () = ()

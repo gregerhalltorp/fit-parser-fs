@@ -4,7 +4,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MesgNum.fs" />
+    <Compile Include="FitBaseType.fs" />
+    <Compile Include="ProfileTypes.fs" />
     <Compile Include="Types.fs" />
-    <Compile Include="Messages.fs" />
+    <Compile Include="TypeDefinitions.fs" />
+    <Compile Include="FileIdMessage.fs" />
   </ItemGroup>
 </Project>

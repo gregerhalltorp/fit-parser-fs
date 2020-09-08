@@ -4,7 +4,7 @@ open NUnit.Framework
 open FsUnit
 open FitParse
 open BinParser
-open Fit2.Messages
+open Fit2.TypeDefinitions
 
 [<SetUp>]
 let Setup () = ()

@@ -1,7 +1,7 @@
 namespace FitParse
 
 open BinParser
-open Fit2.Messages
+open Fit2.TypeDefinitions
 
 [<AutoOpen>]
 module HeaderParser =
