@@ -1,6 +1,7 @@
 namespace Fit2
 
 open System
+open Fit2.Profile
 
 module Types =
   let getMesgNum (value: uint16): MesgNum = LanguagePrimitives.EnumOfValue value

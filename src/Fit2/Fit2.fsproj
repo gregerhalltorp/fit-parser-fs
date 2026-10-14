@@ -3,11 +3,9 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="MesgNum.fs" />
-    <Compile Include="FitBaseType.fs" />
-    <Compile Include="ProfileTypes.fs" />
+    <Compile Include="Profile/Types.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="TypeDefinitions.fs" />
-    <Compile Include="FileIdMessage.fs" />
+    <Compile Include="Profile/Messages.fs" />
   </ItemGroup>
 </Project>

@@ -2,6 +2,7 @@ namespace FitParse
 
 open BinParser
 open Fit2
+open Fit2.Profile
 open Fit2.TypeDefinitions
 open Fit2.Types
 

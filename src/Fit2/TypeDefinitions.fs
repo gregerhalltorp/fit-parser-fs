@@ -1,5 +1,7 @@
 namespace Fit2
 
+open Fit2.Profile
+
 module TypeDefinitions =
   type FieldDefinition =
     { num: byte
@@ -8,14 +10,25 @@ module TypeDefinitions =
 
   type SubFieldMap =
     { refFieldNum: byte
-      refFieldValue: obj }
+      refFieldValue: int64 }
+
+  /// Part of a field's raw value that should be unpacked into another field
+  type Component =
+    { fieldNum: byte
+      scale: double
+      offset: double
+      units: string
+      bits: int
+      isAccumulated: bool }
 
   type SubField =
     { name: string
       fieldType: FitBaseType
+      profileType: ProfileType
       scale: double
       offset: double
       units: string
+      components: Component list
       maps: SubFieldMap list }
 
   type Field =
@@ -26,9 +39,29 @@ module TypeDefinitions =
       offset: double
       units: string
       isAccumulated: bool
+      isArray: bool
       profileType: ProfileType
       values: obj list
+      components: Component list
       subFields: SubField list }
+
+  let baseComponent =
+    { fieldNum = 0uy
+      scale = 1.0
+      offset = 0.0
+      units = ""
+      bits = 0
+      isAccumulated = false }
+
+  let baseSubField =
+    { name = ""
+      fieldType = FitBaseType.Enum
+      profileType = ProfileType.Enum
+      scale = 1.0
+      offset = 0.0
+      units = ""
+      components = []
+      maps = [] }
 
   let baseField =
     { name = ""
@@ -38,21 +71,17 @@ module TypeDefinitions =
       offset = 0.0
       units = ""
       isAccumulated = false
-      profileType = File
+      isArray = false
+      profileType = ProfileType.File
       values = []
+      components = []
       subFields = [] }
 
   let unknownField =
-    { name = "unknown"
-      num = 255uy
-      fieldType = FitBaseType.Enum
-      scale = 1.0
-      offset = 0.0
-      units = ""
-      isAccumulated = false
-      profileType = Enum
-      values = []
-      subFields = [] }
+    { baseField with
+        name = "unknown"
+        num = 255uy
+        profileType = ProfileType.Enum }
 
 
   type MessageDefinition =
